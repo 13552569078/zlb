@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>报告</title>
+    <script src="./js/vue.js"></script>
+    <script src="./js/tailwind.js"></script>
+    <link rel="stylesheet" href="./css/index.css" />
+    <script src="./js/element-plus.js"></script>
+    <script src="./js/Eevent.js"></script>
+    <style>
+        .el-dialog__headerbtn {
+            cursor: pointer;
+            width: 80px;
+            font-weight: bold;
+
+            &::after {
+                content: " 返回";
+            }
+
+            i {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="flex justify-center bg-[#f6f8fc]">
+        <!-- event -->
+        <div class="event-wrap max-w-[1200px]">
+            <!-- Breadcrumb Navigation -->
+            <nav class="flex items-center space-x-2 text-sm text-black h-[60px] bg-[#f6f8fc]" aria-label="breadcrumb">
+                <span class="font-bold text-black">大事记</span>
+                <span class="text-gray-400">&gt;</span>
+                <span>{{title}}</span>
+            </nav>
+            <!-- 头部 -->
+            <div class="w-full bg-white flex justify-center">
+                <div class="w-full max-w-[1500px] px-4 sm:px-6 py-5">
+                    <!-- Main Heading -->
+                    <h1 class="text-2xl sm:text-3xl font-medium text-gray-800 mb-6">
+                        {{title}}
+                    </h1>
+
+                    <!-- Metadata Section -->
+                    <div
+                        class="bg-blue-50 rounded-md p-5 flex flex-col sm:flex-row sm:space-x-10 space-y-4 sm:space-y-0">
+                        <div class="flex items-center space-x-2 flex-1">
+                            <span class="text-gray-600">月份:</span>
+                            <span class="text-gray-800 font-bold">{{getCurrentFormattedMonth()}}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-1">
+                            <span class="text-gray-600">国家:</span>
+                            <span class="text-gray-800 font-bold">{{country}}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- tabs -->
+            <div class="tabs-wrap mt-5">
+                <div class="w-full bg-white px-4 sm:px-6">
+                    <nav class="border-b border-gray-200">
+                        <ul class="flex -mb-px" role="tablist">
+                            <li v-for="tab in tabs" :key="tab" role="presentation">
+                                <button :id="`tab-${tab}`" role="tab" :aria-selected="activeTab === tab"
+                                    :aria-controls="`panel-${tab}`" :class="[
+                              'px-6 py-4 text-sm font-medium focus:outline-none text-[20px]',
+                              activeTab === tab
+                                ? 'text-blue-600 border-b-2 border-blue-600'
+                                : 'text-black hover:text-blue-600 hover:border-gray-300'
+                            ]" @click="setActiveTab(tab)">
+                                    {{ tab }}
+                                </button>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <!-- 内容 -->
+            <div class="con-wrap">
+                <div class="w-full bg-white flex justify-center" v-for="(item,index) in activeEventLists" :key="index">
+                    <div class="w-full max-w-[1500px] px-4 sm:px-6 py-5">
+                        <!-- Main Title -->
+                        <h1 class="text-xl text-gray-800 mb-3">
+                            <span class="text-bold mr-2">【{{index+1}}】:</span> {{item.topic}}
+                        </h1>
+
+                        <!-- Date Range -->
+                        <div class="text-gray-600 mb-4"> {{item.cycle}}</div>
+
+                        <!-- Summary -->
+                        <div class="bg-gray-50 p-4 rounded mb-6 text-gray-700 leading-relaxed">
+                            {{item.description}}
+                        </div>
+
+                        <!-- First Event -->
+                        <div class="mb-6" v-for="(item1,index2) in item.events">
+                            <a href="javascript:void(0);"
+                                class="text-blue-600 hover:text-blue-700 hover:underline text-lg mb-4 block"
+                                @click="openNewList(item1)">
+                                {{item1.title}}
+                            </a>
+                            <div class="bg-gray-50 rounded">
+                                <table class="w-full border-collapse">
+                                    <thead>
+                                        <tr class="border-b border-gray-200">
+                                            <th class="text-left py-3 px-4 text-gray-600 font-medium w-48">
+                                                日期
+                                            </th>
+                                            <th class="text-left py-3 px-4 text-gray-600 font-medium">
+                                                描述
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="py-4 px-4 text-gray-800 align-top border-b border-gray-200">
+                                                {{item1.date}}
+                                            </td>
+                                            <td class="py-4 px-4 text-gray-800 border-b border-gray-200">
+                                                {{item1.description}}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- news-list -->
+
+        <el-dialog v-model="newListVisible" title="" fullscreen @close="closeNewList" v-if="newListVisible"
+            :destroy-on-close="true">
+            <div class="news-list flex justify-center">
+                <div class="w-full max-w-[1200px] mx-autopy-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-6 px-4">
+                        新闻列表
+                    </h1>
+                    <!-- Main Article Header -->
+                    <article class="mb-8 bg-white px-4">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                            {{newList.title}}
+                        </h1>
+                        <div class="text-gray-600 mb-4"> {{newList.date}}</div>
+                        <div class="border-b-2 mb-4"></div>
+                        <p class="text-gray-800 mb-6">
+                            {{newList.description}}
+                        </p>
+                    </article>
+
+                    <!-- Related News Section -->
+                    <section class="mb-8 bg-white px-4 pt-4">
+                        <div class="w-full border-b border-gray-200">
+                            <div class="max-w-[1500px] mx-auto">
+                                <h2
+                                    class="inline-block text-lg font-lg text-blue-600 pb-2 mb-[-1px] border-b-2 border-blue-600">
+                                    事件相关新闻
+                                </h2>
+                            </div>
+                        </div>
+
+                        <!-- News Source Info -->
+
+                        <div v-for="(item,index) in newList.relations" :key="index">
+
+                            <div class="flex items-center gap-3 mb-1 mt-4">
+                                <img src="./image/user.png" alt="VOA Logo" class="w-10 h-10 rounded-full" />
+                                <div>
+                                    <div class="font-medium">观察者</div>
+                                    <div class="text-sm text-gray-500">{{item.date}}</div>
+                                </div>
+                            </div>
+                            <a href="javascript:void(0);"
+                                class="text-xl text-blue-600 hover:text-blue-700 hover:underline text-lg mb-4 block"
+                                @click.stop="openNewDetail(item)">
+                                {{item.title}}
+                            </a>
+                            <div class="space-y-4 bg-gray-50 p-6 rounded-lg">
+                                <p class="text-gray-700" v-for="(item1,index1) in item.objects">
+                                    •
+                                    {{item1.viewpoint}}
+                                </p>
+                            </div>
+                            <div class="border-b-1 my-4 border" v-if="index!==newList.relations.length-1"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </el-dialog>
+
+
+        <!-- news-detail -->
+
+        <el-dialog v-model="newDetailVisible" title="" fullscreen @close="closeNewDetail" v-if="newDetailVisible"
+            :destroy-on-close="true">
+            <div class="news-list flex justify-center">
+                <div class="w-full max-w-[1200px] mx-autopy-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-6 px-4">
+                        新闻详情
+                    </h1>
+                    <article class="mb-8 bg-white px-4">
+                        <h1 class="text-2xl font-bold text-gray-900 mb-2">
+                            {{newDetail.title}}
+                        </h1>
+                        <div class="text-gray-600 mb-4"> {{newDetail.date}}</div>
+                        <div class="border-b-2 mb-4"></div>
+                        <p class="text-gray-800 mb-6">
+                            {{newDetail.abstract}}
+                        </p>
+                    </article>
+
+                    <section class="mb-8 bg-white px-4 pt-4">
+                        <div class="w-full border-b border-gray-200">
+                            <div class="max-w-[1500px] mx-auto">
+                                <h2
+                                    class="inline-block text-lg font-lg text-blue-600 pb-2 mb-[-1px] border-b-2 border-blue-600">
+                                    新闻正文
+                                </h2>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 bg-gray-50 p-6 rounded-lg">
+                            <p class="text-gray-700 text-lg" v-html="newDetail.content">
+                            </p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </el-dialog>
+
+    </div>
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                const newListVisible = ref(false);
+                const newDetailVisible = ref(false);
+
+                const title = ref("");
+
+                getCurrentFormattedMonth = () => {
+                    // 获取当前日期
+                    const now = new Date();
+
+                    // 获取当前年份和月份（注意：月份是从0开始的，所以要+1）
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, "0"); // 使用padStart来确保月份是两位数
+
+                    // 格式化日期为 "YYYY年MM月"
+                    const formattedDate = `${year}年${month}月`;
+
+                    return formattedDate;
+                };
+                title.value = `${getCurrentFormattedMonth()}${EVENTS.name}大事记`;
+
+                const country = ref(EVENTS.name)
+
+
+                const tabs = EVENTS.tableRelateEvent.map((item, index) => {
+                    return item.type
+                })
+
+                const activeTab = ref(tabs[0]);
+
+
+                const activeEventLists = ref([]);
+
+                const getactiveEventLists = (value) => {
+                    activeEventLists.value = EVENTS.tableRelateEvent.filter((item, index) => {
+                        return item.type === value
+                    })[0]?.events
+                }
+
+                const setActiveTab = (tabId) => {
+                    activeTab.value = tabId;
+                    getactiveEventLists(activeTab.value)
+                };
+
+                const closeNewList = () => {
+                    newListVisible.value = false;
+                };
+
+                const newList = ref([])
+
+                const openNewList = (list) => {
+                    newListVisible.value = true;
+                    newList.value = list
+                };
+
+                const newDetail = ref();
+
+                const openNewDetail = (detail) => {
+                    newDetailVisible.value = true;
+                    newDetail.value = detail
+                };
+
+                const closeNewDetail = () => {
+                    newDetailVisible.value = false;
+                };
+
+
+
+                onMounted(() => {
+                    getactiveEventLists(activeTab.value)
+                })
+
+                return {
+                    title,
+                    getCurrentFormattedMonth,
+                    country,
+                    tabs,
+                    activeEventLists,
+                    activeTab,
+                    setActiveTab,
+                    newListVisible,
+                    closeNewList,
+                    openNewList,
+                    newList,
+                    newDetail,
+                    newDetailVisible,
+                    closeNewDetail,
+                    openNewDetail
+                };
+            },
+        })
+            .use(ElementPlus)
+            .mount("#app");
+    </script>
+</body>
+
+</html>
